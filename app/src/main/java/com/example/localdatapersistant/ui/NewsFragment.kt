@@ -43,17 +43,27 @@ class NewsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tabName =arguments?.getString(ARG_TAB)
-        val newsAdapter = NewsAdapter()
+
+
+
 
         val factory: ViewModelFactory = ViewModelFactory.getInstance(requireActivity())
         val viewModel: NewsViewModel by viewModels<NewsViewModel> {
             factory
         }
 
-        if(tabName == TAB_NEWS) {
-            viewModel.getHeadlineNews().observe(viewLifecycleOwner) { result ->
-                if(result != null) {
-                    when(result) {
+        val newsAdapter = NewsAdapter { news ->
+            if (news.isBookmarked){
+                viewModel.deleteNews(news)
+            } else {
+                viewModel.saveNews(news)
+            }
+        }
+
+        if (tabName == TAB_NEWS) {
+            viewModel.getHeadlineNews().observe(viewLifecycleOwner, { result ->
+                if (result != null) {
+                    when (result) {
                         is Result.Loading -> {
                             binding?.progressBar?.visibility = View.VISIBLE
                         }
@@ -64,12 +74,20 @@ class NewsFragment : Fragment() {
                         }
                         is Result.Error -> {
                             binding?.progressBar?.visibility = View.GONE
-                            Toast.makeText(context,
-                                "Terjadi Kesalahan" + result.error, Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(
+                                context,
+                                "Terjadi kesalahan" + result.error,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
+            })
+        } else if (tabName == TAB_BOOKMARK) {
+            // observe(viewLifecyleOwner) ini adalah siklus utamanya dari fragment view
+            viewModel.getBookmarkedNews().observe(viewLifecycleOwner) { bookmarkedNews ->
+                binding?.progressBar?.visibility = View.GONE
+                newsAdapter.submitList(bookmarkedNews)
             }
         }
 

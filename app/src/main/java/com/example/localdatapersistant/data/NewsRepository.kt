@@ -20,13 +20,17 @@ class NewsRepository private constructor(
     private val newsDao: NewsDao,
     private val appExecutors: AppExecutors
 ){
+    //     komponen ini digunakan jika Anda ingin menggabungkan banyak
+    //     sumber data dalam sebuah LiveData. Apabila data sumber bukan merupakan LiveData,
+    //     gunakan fungsi setValue seperti berikut:
   private val result = MediatorLiveData<Result<List<NewsEntity>>>()
 
     fun getHeadLineNews():LiveData<Result<List<NewsEntity>>>{
         result.value = Result.Loading
         val client = apiService.getNews(BuildConfig.API_KEY)
         client.enqueue(object : Callback<NewsResponse> {
-            override fun onResponse(call: Call<NewsResponse>, response: Response<NewsResponse>) {
+           override fun onResponse(call: Call<NewsResponse>, response: Response<NewsResponse>) {
+               // menyimpan data ke database ketika berhasil
                 if(response.isSuccessful) {
                     val articles = response.body()?.articles
                     val newList = ArrayList<NewsEntity>()
@@ -40,6 +44,7 @@ class NewsRepository private constructor(
                                 article?.url,
                                 isBookmarked
                             )
+                            // tambahkan ke database
                             newList.add(news)
                             Log.d("NeswRepository", "Cek Datanya $news")
                         }
@@ -55,10 +60,22 @@ class NewsRepository private constructor(
 
         })
         val localData = newsDao.getNews()
+        // apabila sumber berupada Livedata gunakan method addSource
         result.addSource(localData) { newData: List<NewsEntity> ->
             result.value = Result.Success(newData)
         }
         return result
+    }
+
+    fun getBookmarkedNews():LiveData<List<NewsEntity>> {
+        return newsDao.getBookmarkedNews()
+    }
+
+    fun setBookmarkedNews(news:NewsEntity, bookmarkState:Boolean) {
+        appExecutors.diskIO.execute{
+            news.isBookmarked = bookmarkState
+            newsDao.updateNews(news)
+        }
     }
     companion object {
         @Volatile

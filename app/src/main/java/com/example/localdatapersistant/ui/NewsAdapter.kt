@@ -4,17 +4,18 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.localdatapersistant.R
 import com.example.localdatapersistant.data.local.entity.NewsEntity
 import com.example.localdatapersistant.databinding.ItemNewsBinding
 import com.example.localdatapersistant.utils.DateFormatter
 
-class NewsAdapter: ListAdapter<NewsEntity, NewsAdapter.MyViewHolder>(DIFF_CALBACK) {
+class NewsAdapter(private val onBookmarkClick: (NewsEntity) -> Unit): ListAdapter<NewsEntity, NewsAdapter.MyViewHolder>(DIFF_CALBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val binding = ItemNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -24,6 +25,16 @@ class NewsAdapter: ListAdapter<NewsEntity, NewsAdapter.MyViewHolder>(DIFF_CALBAC
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val news = getItem(position)
         holder.bind(news)
+
+        val ivBookmark = holder.binding.ivBookmark
+        if (news.isBookmarked) {
+            ivBookmark.setImageDrawable(ContextCompat.getDrawable(ivBookmark.context, R.drawable.baseline_bookmark_24))
+        } else {
+            ivBookmark.setImageDrawable(ContextCompat.getDrawable(ivBookmark.context, R.drawable.baseline_bookmark_border_24))
+        }
+        ivBookmark.setOnClickListener {
+            onBookmarkClick(news)
+        }
     }
     class MyViewHolder(val binding:ItemNewsBinding) : RecyclerView.ViewHolder(binding.root) {
             fun bind(news:NewsEntity) {
